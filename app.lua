@@ -59,6 +59,16 @@ mqtt_connect()
 
 -- schedule utility func
 min=60000
+sec=1000
+sched_tmr = {}
+-- interval
+-- rep = 0 = tmr.ALARM_SINGLE
+function sched(interval_ms, rep, fn)
+  local tm = tmr.create()
+  sched_tmr[#sched_tmr + 1] = tm
+  tm:alarm(interval_ms, rep, fn)
+end
+
 if file.exists('schedule.lua') then
   dofile("schedule.lua")
 end
