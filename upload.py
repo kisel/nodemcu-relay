@@ -38,7 +38,7 @@ async def main():
         print("sending " + fn)
         # make sure term is ready
         await send('=65535\n')
-        await send("f=file.open('{}', 'w')".format(fn))
+        await send("fdupload=file.open('{}', 'w')".format(fn))
         await send("function unhex(str) return (str:gsub('..', function (cc) return string.char(tonumber(cc, 16)) end)) end")
 
         for l in open(fn):
@@ -46,10 +46,12 @@ async def main():
                 next
             if args.debug:
                 print('sending: ' + l.strip())
-            await send("f:write(unhex('{}'))\n".format(binascii.hexlify(l.encode()).decode('ascii')))
+            await send("fdupload:write(unhex('{}'))\n".format(binascii.hexlify(l.encode()).decode('ascii')))
             await writer.drain()
 
-        await send("f:close()")
+        await send("fdupload:flush()")
+        await send("fdupload:close()")
+        await send("fdupload=nil")
         print("\nsent " + fn)
     # ensure we're done
     await send("print('done', 333+555)")
