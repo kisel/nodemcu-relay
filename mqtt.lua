@@ -7,8 +7,10 @@ mqtt_client = nil
 switch_topic = "switch/"..clientid 
 
 function mqtt_connect()
-  -- 0 for legacy, true for new mqtt
   print("mqtt connecting")
+  -- m:connect args of 1.5x and 3.x are not compatible
+  -- 1.54 should use '0' for insecure 'ssl' legacy
+  -- 3.xx should use 'true'
   m:connect(MQTT_HOST, 1883, 0, function(client)
     print("mqtt connected", client)
     mqtt_client = client
