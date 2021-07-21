@@ -1,0 +1,6 @@
+SSID="mywifi"
+PASSWORD="mywifipass"
+MQTT_HOST="mqtt.local"
+min=60000
+ON_TIMER=20 * min
+
