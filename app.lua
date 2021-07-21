@@ -29,10 +29,10 @@ end
 function wr_config(fn, data)
     print('writing config '..fn..' with '..data)
     local f = file.open(fn, 'w')
-    res = f:write(data)
+    f:write(data)
     f:flush()
     f:close()
-    print('wrote config '..fn..' data='..data..' res='..res)
+    print('wrote config '..fn..' data='..data)
     -- do NOT restart immediately - it can corrupt filesystem :(
     tmr.create():alarm(5000, tmr.ALARM_SINGLE, function() node.restart() end)
 end
