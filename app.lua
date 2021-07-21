@@ -22,13 +22,44 @@ function pwr_off()
     ch0 = 0
 end
 
+function endswith(a, b)
+    return string.sub(a, -b:len()) == b
+end
+
+function wr_config(fn, data)
+    print('writing config '..fn..' with '..data)
+    local f = file.open(fn, 'w')
+    res = f:write(data)
+    f:flush()
+    f:close()
+    print('wrote config '..fn..' data='..data..' res='..res)
+    -- do NOT restart immediately - it can corrupt filesystem :(
+    tmr.create():alarm(5000, tmr.ALARM_SINGLE, function() node.restart() end)
+end
+
 m:on("message", function(client, topic, data)
-  if data == "ch0=1" then
-      pwr_on()
-  elseif data == "ch0=0" then
-      pwr_off()
+  if endswith(topic, '/ctrl') then
+      if data == "ch0=1" then
+          pwr_on()
+      elseif data == "ch0=0" then
+          pwr_off()
+      elseif data == "restart=1" then
+          node.restart()
+      end
+  elseif endswith(topic, '/exec') then
+      node.input(data)
+  elseif endswith(topic, '/schedule') then
+      wr_config('schedule.lua', data)
+  elseif endswith(topic, '/lconfig') then
+      wr_config('lconfig.lua', data)
   end
 end)
 
 mqtt_connect()
+
+-- schedule utility func
+min=60000
+if file.exists('schedule.lua') then
+  dofile("schedule.lua")
+end
 

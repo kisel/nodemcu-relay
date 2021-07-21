@@ -28,6 +28,14 @@ lconfig.lua is optional and can be used to override timer without touching wifi 
     mosquitto_pub -L mqtt://mqtt/switch/NODE-11A21A/ctrl -m ch0=1
     mosquitto_pub -L mqtt://mqtt/switch/NODE-11A21A/ctrl -m ch0=0
 
+## Online reconfigure
+
+    #mosquitto_pub -L mqtt://mqtt/switch/NODE-11A21A/ctrl/lconfig -m 'print("hello from lconfig.lua")'
+    #mosquitto_pub -L mqtt://mqtt/switch/NODE-11A21A/ctrl/schedule -m 'print("hello from schedule.lua")'
+
+## Online reconfigure
+    mosquitto_pub -L mqtt://mqtt/switch/NODE-11A21A/ctrl -m restart=1
+
 ## Receive relay events
 
     mosquitto_sub -v -L mqtt://mqtt/switch/#

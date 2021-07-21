@@ -15,7 +15,7 @@ function mqtt_connect()
     print("mqtt connected", client)
     mqtt_client = client
     mqtt_client:lwt(switch_topic.."/offline"..clientid, 'uptime='..tmr.time(), 0, 0)
-    mqtt_client:subscribe(switch_topic.."/ctrl", 0, function(client) print("subscribed") end)
+    mqtt_client:subscribe(switch_topic.."/ctrl/#", 0, function(client) print("subscribed") end)
   end,
   function(client, reason)
     print("Connection failed reason: " .. reason)

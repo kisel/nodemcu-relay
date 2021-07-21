@@ -4,6 +4,7 @@ import asyncio
 import time
 import binascii
 import re
+import sys
 RE_COMMENT = '^\s*--.*'
 
 async def main():
@@ -30,7 +31,8 @@ async def main():
         if args.debug:
             print("recv prompt: " + res.decode())
         else:
-            print('.', end='')
+            sys.stdout.write('.')
+            sys.stdout.flush()
 
     for fn in args.file:
         print("sending " + fn)
