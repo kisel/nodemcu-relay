@@ -15,7 +15,7 @@ could be better to just upload telnet.lua and upload the rest via upload.py scri
 
     # cp config.example.lua config.lua
     # vim config.lua
-    ./upload.py ESP_TELNET_HOST config.lua wifi.lua telnet.lua mqtt.lua app.lua init.lua 
+    ./upload.py upload $ESP_HOST config.lua wifi.lua telnet.lua mqtt.lua app.lua init.lua 
 
 # Usage
 
