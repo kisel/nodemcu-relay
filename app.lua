@@ -1,12 +1,12 @@
 print("Loading app.lua")
 dofile("mqtt.lua")
-
+ch0 = 0
 tmr_status = tmr.create()
-tmr_status:alarm(5000, tmr.ALARM_AUTO, function()
+tmr_status:alarm(UPD_INTERVAL, tmr.ALARM_AUTO, function()
   if mqtt_client ~= nil then
-      payload="uptime="..tmr.time().." rssi="..wifi.sta.getrssi()
+      payload="uptime="..tmr.time().." rssi="..wifi.sta.getrssi().." ch0="..ch0
       mqtt_client:publish(switch_topic.."/status", payload, 0, 0)
-      mqtt_client:lwt(switch_topic.."/duration"..clientid, tmr.time(), 0, 0)
+      mqtt_client:lwt(switch_topic.."/offline"..clientid, 'uptime='..tmr.time(), 0, 0)
   end
 end)
 
@@ -14,16 +14,18 @@ end)
 function pwr_on()
     gpio.write(3, 0)
     gpio.write(1, 0)
+    ch0 = 1
 end
 function pwr_off()
     gpio.mode(3, gpio.INPUT)
     gpio.mode(1, gpio.INPUT)
+    ch0 = 0
 end
 
 m:on("message", function(client, topic, data)
-  if data == "pwr=1" then
+  if data == "ch0=1" then
       pwr_on()
-  elseif data == "pwr=0" then
+  elseif data == "ch0=0" then
       pwr_off()
   end
 end)

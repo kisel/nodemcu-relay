@@ -1,4 +1,7 @@
-clientid = wifi.sta.gethostname()
+clientid = ID
+if clientid == nil then
+  clientid = wifi.sta.gethostname()
+end
 m = mqtt.Client(clientid, 120)
 mqtt_client = nil
 switch_topic = "switch/"..clientid 
@@ -9,8 +12,8 @@ function mqtt_connect()
   m:connect(MQTT_HOST, 1883, 0, function(client)
     print("mqtt connected", client)
     mqtt_client = client
-    client:lwt(switch_topic.."/offline", "offline", 0, 0)
-    client:subscribe(switch_topic.."/ctrl", 0, function(client) print("subscribed") end)
+    mqtt_client:lwt(switch_topic.."/offline"..clientid, 'uptime='..tmr.time(), 0, 0)
+    mqtt_client:subscribe(switch_topic.."/ctrl", 0, function(client) print("subscribed") end)
   end,
   function(client, reason)
     print("Connection failed reason: " .. reason)
