@@ -11,7 +11,7 @@ function mqtt_connect()
   -- m:connect args of 1.5x and 3.x are not compatible
   -- 1.54 should use '0' for insecure 'ssl' legacy
   -- 3.xx should use 'true'
-  m:connect(MQTT_HOST, 1883, 0, function(client)
+  m:connect(MQTT_HOST, 1883, false, function(client)
     print("mqtt connected", client)
     mqtt_client = client
     mqtt_client:lwt(switch_topic.."/offline"..clientid, 'uptime='..tmr.time(), 0, 0)

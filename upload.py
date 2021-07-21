@@ -9,6 +9,7 @@ RE_COMMENT = '^\s*--.*'
 
 async def main():
     parser = argparse.ArgumentParser(description='Uploads script to nodemcu via telnet connection')
+    parser.add_argument('action', choices=['upload', 'print'])
     parser.add_argument('host', help='nodemcu hostname/ip')
     parser.add_argument('--port', default=23, help='telnet port')
     parser.add_argument('--debug', action='store_true')

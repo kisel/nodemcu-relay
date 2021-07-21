@@ -65,7 +65,7 @@ sched_tmr = {}
 -- rep = 0 = tmr.ALARM_SINGLE
 function sched(interval_ms, rep, fn)
   local tm = tmr.create()
-  sched_tmr[#sched_tmr + 1] = tm
+  table.insert(sched_tmr, tm)
   tm:alarm(interval_ms, rep, fn)
 end
 

@@ -1,3 +1,2 @@
 esptool.py erase_flash
-esptool.py write_flash 0x0 firmware/nodemcu-1.5.4.1-final-10-modules-2021-07-18-13-35-55-integer.bin
-
+esptool.py write_flash 0x0 firmware/nodemcu-release-12-modules-2021-07-21-18-04-52-integer.bin
