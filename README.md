@@ -50,3 +50,13 @@ example output:
     switch/NODE-11A21A/offline uptime=2883
 
 
+
+## Troubleshooting
+
+### ESP is consuming >100mA
+
+Could be a CPU power issue(too low/high or not stable).
+Normal consumtion at 3.3v should be < 90mA.
+Could also be a crappy boards(like 'white' ESP board) with AMS1117 or 7333-A LDO, but without a decent low-esr capacitor.
+(that was my case. ESP and 7333 were extermely hot until i figured out it was really an unstable voltage problem due to no or bad capacitor)
+
