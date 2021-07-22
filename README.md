@@ -11,10 +11,11 @@ could be better to just upload telnet.lua and upload the rest via upload.py scri
     npm install nodemcu-tool
     ./node_modules/.bin/nodemcu-tool  upload config.lua wifi.lua telnet.lua mqtt.lua app.lua init.lua 
 
-# upload over telnet
+# upload over telnet/tcp with upload.py
 
     # cp config.example.lua config.lua
     # vim config.lua
+    ./upload.py --debug --serial /dev/ttyUSB0 upload config.lua wifi.lua telnet.lua mqtt.lua app.lua init.lua
     ./upload.py upload $ESP_HOST config.lua wifi.lua telnet.lua mqtt.lua app.lua init.lua 
 
 # Usage

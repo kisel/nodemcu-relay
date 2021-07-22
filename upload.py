@@ -8,14 +8,26 @@ import sys
 import serial
 import socket
 RE_COMMENT = '^\s*--.*'
+NODEMCU_PROMPT = b"> "
+
+# esp8266 has 128byte hardware UART buffer,
+# we should not exceed it, otherwise
+UART_HW_BUF_SIZE = 128
+# lets CPU to process incoming UART pkt
+UART_FEED_DELAY = 0.1
 
 class EspConn:
     def __init__(self):
         self.debug = False
 
-    def onrecv(self, res):
+    def onrecv(self, buf):
+        try:
+            s = buf.decode()
+        except:
+            print("possibly corrupted buffer: ", buf)
+            raise
         if self.debug:
-            print("recv prompt: " + res)
+            print(f"recv: '{s}'")
         else:
             sys.stdout.write('.')
             sys.stdout.flush()
@@ -36,11 +48,11 @@ class TcpConn(EspConn):
         if args.debug:
             print(cmd)
         await writer.drain()
-        res = await reader.readuntil(b">")
+        res = await reader.readuntil(NODEMCU_PROMPT)
         # give 1ms to send extra > or ' ', '\n' if any
         time.sleep(0.01)
         res += await reader.read(1024)
-        self.onrecv(res.decode())
+        self.onrecv(res)
 
     def close(self):
         self.writer.close()
@@ -48,20 +60,24 @@ class TcpConn(EspConn):
 
 class SerialConn(EspConn):
     def __init__(self, port, baud):
-        self.ser = serial.Serial(port, baud, timeout=1)
+        self.ser = serial.Serial(port, baud, timeout=10)
         print(self.ser)
 
     def send(self, cmd):
-        self.ser.write((cmd+'\n').encode())
+        fifo = (cmd+'\n').encode()
+        while len(fifo) > 0:
+            self.ser.write(fifo[:UART_HW_BUF_SIZE])
+            fifo = fifo[UART_HW_BUF_SIZE:]
+            time.sleep(UART_FEED_DELAY)
         if self.debug:
-            print(cmd)
+            print("sent: " + cmd)
         # sending too fast will cause buffer overflow?
-        mirror_command = self.ser.readline().decode()
+        mirror_command = self.ser.readline()
         self.onrecv(mirror_command)
         while True:
-            res = self.ser.readline().decode()
+            res = self.ser.read_until(NODEMCU_PROMPT)
             self.onrecv(res)
-            if res == "" or '>' in res:
+            if res == b"" or b'>' in res:
                 break
 
     def close(self):
@@ -93,7 +109,7 @@ def main():
     for fn in args.file:
         print("sending " + fn)
         # make sure term is ready
-        esp.send('=65535\n')
+        esp.send('=22333+33222')
         esp.send("fdupload=file.open('{}', 'w')".format(fn))
         esp.send("function unhex(str) return (str:gsub('..', function (cc) return string.char(tonumber(cc, 16)) end)) end")
 
