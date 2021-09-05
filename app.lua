@@ -18,6 +18,7 @@ function on_pin(pin)
 end
 function off_pin(pin)
     gpio.mode(pin, gpio.INPUT)
+    gpio.write(pin, 1)
     mqtt_client:publish(switch_topic.."/event", "off_pin "..pin, 0, 0)
 end
 
@@ -30,12 +31,19 @@ function off_all()
     gpio.mode(6, gpio.INPUT)
 end
 
+-- high-level functions
 function zone_on(pin, time_s)
-    off_all()
+    zone_off()
     on_pin(pin)
     tmr_zone:alarm(time_s * 1000, tmr.ALARM_SINGLE, off_all)
 end
 
+function zone_off()
+    sched_clear()
+    off_all()
+end
+
+---
 function endswith(a, b)
     return string.sub(a, -b:len()) == b
 end
@@ -75,7 +83,7 @@ function sched(interval_ms, rep, fn)
   tm:alarm(interval_ms, rep, fn)
 end
 function sched_clear()
-  for k in pairs(sched_tmr) do k:unregister() end
+  for k, v in pairs(sched_tmr) do v:unregister() end
   sched_tmr = {}
 end
 
