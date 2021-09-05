@@ -5,7 +5,6 @@ import time
 import binascii
 import re
 import sys
-import serial
 import socket
 RE_COMMENT = '^\s*--.*'
 NODEMCU_PROMPT = b"> "
@@ -18,7 +17,12 @@ UART_FEED_DELAY = 0.1
 
 class EspConn:
     def __init__(self):
+        super().__init__()
         self.debug = False
+
+    def log(self, msg):
+        if self.debug:
+            print(msg)
 
     def onrecv(self, buf):
         try:
@@ -33,33 +37,51 @@ class EspConn:
             sys.stdout.flush()
 
 class TcpConn(EspConn):
-    def __init__(self, host, port):
-        self.reader = None
-        self.writer = None
+    reader = None
+    writer = None
 
-    async def open(self, host, port):
+    def open(self, host, port):
+        aio_run(self._open(host, port))
+
+    async def _open(self, host, port):
+        self.log(f"Connecting to {host}:{port}")
         self.reader, self.writer = await asyncio.open_connection(host, port)
-
-    def send(cmd):
-        asyncio.run(main())
-
-    async def _send(cmd):
-        writer.write((cmd+'\n').encode())
-        if args.debug:
-            print(cmd)
+        # initialize prompt(we start from unknown term state)
+        writer = self.writer
+        reader = self.reader
+        time.sleep(1)
+        self.log("initializing terminal")
+        writer.write(("print(244+422)\n").encode())
         await writer.drain()
+        await reader.readuntil(f"{244+422}".encode())
+        self.log("got lua response")
+        await reader.readuntil(NODEMCU_PROMPT)
+        self.log("prompt is ready response")
+
+    def send(self, cmd):
+        aio_run(self._send(cmd))
+
+    async def _send(self, cmd):
+        writer = self.writer
+        reader = self.reader
+        writer.write((cmd+'\n').encode())
+        await writer.drain()
+        if self.debug:
+            print("sent: " + cmd)
         res = await reader.readuntil(NODEMCU_PROMPT)
         # give 1ms to send extra > or ' ', '\n' if any
-        time.sleep(0.01)
-        res += await reader.read(1024)
+        #time.sleep(0.01)
+        #res += await reader.read(1024)
         self.onrecv(res)
 
     def close(self):
         self.writer.close()
-        asyncio.run(self.writer.wait_closed())
+        aio_run(self.writer.wait_closed())
 
 class SerialConn(EspConn):
-    def __init__(self, port, baud):
+    ser = None
+
+    def open(self, port, baud):
         self.ser = serial.Serial(port, baud, timeout=10)
         print(self.ser)
 
@@ -84,6 +106,10 @@ class SerialConn(EspConn):
         self.ser.close()
 
 
+def aio_run(coroutine):
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(coroutine)
+
 def main():
     parser = argparse.ArgumentParser(description='Uploads script to nodemcu via telnet connection')
     parser.add_argument('action', choices=['upload', 'print'])
@@ -98,13 +124,18 @@ def main():
     args = parser.parse_args()
 
     if args.serial:
-        esp = SerialConn(args.serial, args.baud)
+        import serial
+        esp = SerialConn()
+        esp.debug = args.debug
+        esp.open(args.serial, args.baud)
     elif args.host:
-        esp = TcpConn(args.host, args.port)
+        esp = TcpConn()
+        esp.debug = args.debug
+        esp.open(args.host, args.port)
     else:
         print("specify --host or --serial")
         exit(1)
-    esp.debug = args.debug
+    print(esp.debug)
 
     for fn in args.file:
         print("sending " + fn)
@@ -126,6 +157,7 @@ def main():
         print("\nsent " + fn)
     # ensure we're done
     esp.send("print('done', 333+555)")
+    esp.send("print('exit', 111-111)")
     esp.close()
 
 main()
