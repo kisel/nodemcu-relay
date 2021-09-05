@@ -1,25 +1,39 @@
 print("Loading app.lua")
 dofile("mqtt.lua")
-ch0 = 0
 tmr_status = tmr.create()
 tmr_status:alarm(UPD_INTERVAL, tmr.ALARM_AUTO, function()
   if mqtt_client ~= nil then
-      payload="uptime="..tmr.time().." rssi="..wifi.sta.getrssi().." ch0="..ch0
+      payload="uptime="..tmr.time().." rssi="..wifi.sta.getrssi()
       mqtt_client:publish(switch_topic.."/status", payload, 0, 0)
       mqtt_client:lwt(switch_topic.."/offline"..clientid, 'uptime='..tmr.time(), 0, 0)
   end
 end)
 
--- low-level powered relays on GPIO5(preferred) or GPIO0(esp8266-01 boards)
-function pwr_on()
-    gpio.write(3, 0)
-    gpio.write(1, 0)
-    ch0 = 1
+tmr_zone = tmr.create()
+-- LOW-triggered relay
+function on_pin(pin)
+    gpio.write(pin, 0)
+    gpio.mode(pin, gpio.OUTPUT)
+    mqtt_client:publish(switch_topic.."/event", "on_pin "..pin, 0, 0)
 end
-function pwr_off()
-    gpio.mode(3, gpio.INPUT)
+function off_pin(pin)
+    gpio.mode(pin, gpio.INPUT)
+    mqtt_client:publish(switch_topic.."/event", "off_pin "..pin, 0, 0)
+end
+
+function off_all()
+    mqtt_client:publish(switch_topic.."/event", "off_all", 0, 0)
+    tmr_zone:unregister()
     gpio.mode(1, gpio.INPUT)
-    ch0 = 0
+    gpio.mode(2, gpio.INPUT)
+    gpio.mode(5, gpio.INPUT)
+    gpio.mode(6, gpio.INPUT)
+end
+
+function zone_on(pin, time_s)
+    off_all()
+    on_pin(pin)
+    tmr_zone:alarm(time_s * 1000, tmr.ALARM_SINGLE, off_all)
 end
 
 function endswith(a, b)
@@ -38,16 +52,8 @@ function wr_config(fn, data)
 end
 
 m:on("message", function(client, topic, data)
-  if endswith(topic, '/ctrl') then
-      if data == "ch0=1" then
-          pwr_on()
-      elseif data == "ch0=0" then
-          pwr_off()
-      elseif data == "restart=1" then
-          node.restart()
-      end
-  elseif endswith(topic, '/exec') then
-      node.input(data)
+  if endswith(topic, '/exec') then
+      node.input(data..'\n')
   elseif endswith(topic, '/schedule') then
       wr_config('schedule.lua', data)
   elseif endswith(topic, '/lconfig') then
@@ -67,6 +73,10 @@ function sched(interval_ms, rep, fn)
   local tm = tmr.create()
   table.insert(sched_tmr, tm)
   tm:alarm(interval_ms, rep, fn)
+end
+function sched_clear()
+  for k in pairs(sched_tmr) do k:unregister() end
+  sched_tmr = {}
 end
 
 if file.exists('schedule.lua') then
